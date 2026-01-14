@@ -56,6 +56,30 @@ Software:
 
 ---
 
+## ComfyUI runtime notes
+
+When launching ComfyUI, enable preview updates so the UI can display sampling progress:
+
+```bash
+python main.py --preview-method taesd
+```
+
+If you prefer automatic selection, you can use:
+
+```bash
+python main.py --preview-method auto
+```
+
+### TTY requirements in containers
+
+Some samplers in ComfyUI expect a TTY for progress output. If you are running inside Docker, make sure you allocate a TTY (for example, `docker run -it ...`) or configure your runtime to attach a pseudo-TTY so progress updates do not stall or disappear.
+
+### Troubleshooting: proxy timeouts
+
+Long-running image generations can exceed reverse-proxy timeouts. If you see 504/timeout errors while a job is still running, increase the proxy timeout values (for example, `proxy_read_timeout`/`proxy_send_timeout` in Nginx or `timeout`/`readTimeout` in your load balancer) to accommodate longer sampling durations.
+
+---
+
 ## Legacy Python notes
 
 The previous Python implementation is still checked in for reference, but it is no longer used by the JS workflow. You can remove it after validating the JS build on your target hardware.
