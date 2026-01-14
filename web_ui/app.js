@@ -417,7 +417,7 @@ function applyCameraOrientation() {
   const containerRatio =
     container.width && container.height ? container.width / container.height : 1;
   const rotated = orientation === 90 || orientation === 270;
-  const scale = rotated ? Math.max(containerRatio, 1 / containerRatio) : 1;
+  const scale = rotated ? Math.min(containerRatio, 1 / containerRatio) : 1;
   if (orientation) {
     video.style.transform = `rotate(${orientation}deg) scale(${scale})`;
   } else {
