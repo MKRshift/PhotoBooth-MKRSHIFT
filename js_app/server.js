@@ -286,6 +286,7 @@ const server = http.createServer((req, res) => {
           const buffer = writeBase64Image(image, comfyInputPath);
           fs.writeFileSync(path.join(galleryInputDir, captureName), buffer);
           console.info(`Queueing ComfyUI prompt (clientId: ${comfyClientId}).`);
+          const promptId = crypto.randomUUID();
           const result = await sendWorkflow({
             workflowDir,
             styleName: style,
@@ -293,13 +294,22 @@ const server = http.createServer((req, res) => {
             inputImagePath: comfyInputPath,
             serverUrl: comfyServerUrl,
             clientId: comfyClientId,
+            promptId,
           });
           if (result?.prompt_id) {
             promptToCapture.set(result.prompt_id, safeId);
             lastPromptId = result.prompt_id;
+          } else {
+            promptToCapture.set(promptId, safeId);
+            lastPromptId = promptId;
           }
           res.writeHead(202, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ status: "queued", promptId: result.prompt_id }));
+          res.end(
+            JSON.stringify({
+              status: "queued",
+              promptId: result.prompt_id ?? promptId,
+            })
+          );
         } catch (error) {
           res.writeHead(500);
           res.end(`Queue failed: ${error.message}`);
@@ -367,7 +377,10 @@ const server = http.createServer((req, res) => {
           }
         }
         const completed =
-          Boolean(socketProgress?.complete) || Boolean(historyItem?.status?.completed);
+          Boolean(socketProgress?.complete) ||
+          Boolean(historyItem?.status?.completed) ||
+          Boolean(historyItem?.status?.status_str === "success") ||
+          Boolean(outputImage);
         if (!Number.isFinite(percent) || percent <= 0) {
           percent = completed ? 100 : 0;
         }
