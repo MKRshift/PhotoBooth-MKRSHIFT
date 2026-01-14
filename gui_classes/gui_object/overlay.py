@@ -8,16 +8,17 @@ from PySide6.QtGui import (
     QMovie, QPixmap, QIcon, QImage, QPainter, QColor,
     QPen, QPainterPath
 )
-from constant import TITLE_LABEL_STYLE, GRID_WIDTH, COUNTDOWN_FONT_STYLE,OVERLAY_TITLE_STYLE, OVERLAY_MSG_STYLE,OVERLAY_LOADING_MSG_STYLE, OVERLAY_LOADING_TITLE_STYLE
+from gui_classes.gui_object.constant import TITLE_LABEL_STYLE, GRID_WIDTH, COUNTDOWN_FONT_STYLE,OVERLAY_TITLE_STYLE, OVERLAY_MSG_STYLE,OVERLAY_LOADING_MSG_STYLE, OVERLAY_LOADING_TITLE_STYLE, SCREEN_INDEX
 from gui_classes.gui_object.btn import Btns
 from gui_classes.gui_object.toolbox import normalize_btn_name, LoadingBar
 from gui_classes.gui_manager.language_manager import language_manager
+
 import os
 
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL
 
 DEBUG_Overlay = DEBUG
 DEBUG_Overlay_FULL = DEBUG_FULL
@@ -111,11 +112,11 @@ class Overlay(QWidget):
         if DEBUG_Overlay: 
             logger.info(f"[DEBUG][Overlay] Entering center_overlay: args=()")
         parent_window = self.window()
-        screen = None
-        if parent_window is not None and hasattr(parent_window, 'screen'):
-            screen = parent_window.screen()
-        if screen is None:
-            screen = QApplication.primaryScreen()
+        screen = QApplication.screens()[SCREEN_INDEX] if 0 <= SCREEN_INDEX < len(QApplication.screens()) else QApplication.primaryScreen()
+        # if parent_window is not None and hasattr(parent_window, 'screen'):
+        #     screen = parent_window.screen()
+        # if screen is None:
+        #     screen = QApplication.screens()[SCREEN_INDEX] if 0 <= SCREEN_INDEX < len(QApplication.screens()) else QApplication.primaryScreen()
         if screen:
             geometry = screen.geometry()
             w, h = self.width(), self.height()
@@ -430,6 +431,7 @@ class OverlayLoading(OverlayWhite):
         if DEBUG_OverlayLoading: 
             logger.info(f"[DEBUG][OverlayLoading] Entering __init__: args={(parent, width_percent, height_percent, border_thickness, duration)}")
         super().__init__(parent, center_on_screen=False)
+        #screen = QApplication.screens()[SCREEN_INDEX] if 0 <= SCREEN_INDEX < len(QApplication.screens()) else QApplication.primaryScreen()
         screen = QApplication.primaryScreen()
         if screen:
             self.setGeometry(screen.geometry())
@@ -985,7 +987,7 @@ class OverlayCountdown(Overlay):
         self._anim_timer.setSingleShot(True)
         self._anim_timer.timeout.connect(self._hide_number)
         self.showFullScreen()
-        screen = QApplication.primaryScreen()
+        screen = QApplication.screens()[SCREEN_INDEX] if 0 <= SCREEN_INDEX < len(QApplication.screens()) else QApplication.primaryScreen()
         if screen:
             geometry = screen.geometry()
             self.setGeometry(geometry)
@@ -993,12 +995,12 @@ class OverlayCountdown(Overlay):
         if DEBUG_OverlayCountdown: 
             logger.info(f"[DEBUG][OverlayCountdown] Exiting __init__: return=None")
 
-    def center_overlay(self) -> None:
-        """
-        Center the countdown overlay on the screen.
-        """
-        if DEBUG_OverlayCountdown: logger.info(f"[DEBUG][OverlayCountdown] Entering center_overlay: args=()")
-        if DEBUG_OverlayCountdown: logger.info(f"[DEBUG][OverlayCountdown] Exiting center_overlay: return=None")
+    # def center_overlay(self) -> None:
+    #     """
+    #     Center the countdown overlay on the screen.
+    #     """
+    #     if DEBUG_OverlayCountdown: logger.info(f"[DEBUG][OverlayCountdown] Entering center_overlay: args=()")
+    #     if DEBUG_OverlayCountdown: logger.info(f"[DEBUG][OverlayCountdown] Exiting center_overlay: return=None")
 
     def resizeEvent(self, event: QEvent) -> None:
         """

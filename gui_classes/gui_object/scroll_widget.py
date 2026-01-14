@@ -9,7 +9,7 @@ from PySide6.QtGui import QPixmap, QTransform, QPainter, QGuiApplication
 from math import cos, radians
 from math import atan2, degrees
 from PySide6.QtWidgets import (
-    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QWidget, QVBoxLayout, QLabel
+    QApplication, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QWidget, QVBoxLayout, QLabel
 )
 from PIL import Image
 from screeninfo import get_monitors
@@ -17,7 +17,7 @@ from screeninfo import get_monitors
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL, SCREEN_INDEX
 DEBUG_ImageLoader = DEBUG
 DEBUG_Column = DEBUG
 DEBUG_Column_FULL = DEBUG_FULL
@@ -29,8 +29,6 @@ DEBUG_InfiniteScrollWidget = DEBUG
 DEBUG_InfiniteScrollWidget_FULL = DEBUG_FULL
 DEBUG_ScrollOverlay = DEBUG
 DEBUG_ScrollOverlay_FULL = DEBUG_FULL
-
-
 
 def get_monitor_for_widget(widget: QWidget) -> object:
     """
@@ -363,7 +361,7 @@ class ScrollTab:
         self.gradient_only = gradient_only
 
         self._col_params = [
-            (i * iw, iw, ih, self.num_rows, -1 if i % 2 == 0 else 1)
+            (i * iw, iw, ih, self.num_rows, -1 if i % 3 == 0 else 1)
             for i in range(self.num_cols)
         ]
         if DEBUG_ScrollTab:
@@ -451,6 +449,7 @@ class InfiniteScrollView(QGraphicsView):
         self._scene = QGraphicsScene(self)
         self._scene.setBackgroundBrush(Qt.transparent)
         self.setScene(self._scene)
+        self.showFullScreen()
         
         ImageLoader.resize_images_in_folder(folder_path, width=340)
         self.image_paths = ImageLoader.load_paths(folder_path)
@@ -840,7 +839,7 @@ class InfiniteScrollWidget(QWidget):
         """
         if DEBUG_InfiniteScrollWidget:
             logger.info(f"[DEBUG][InfiniteScrollWidget] Entering sizeHint: args={{}}")
-        screen = QGuiApplication.primaryScreen()
+        screen = QApplication.screens()[SCREEN_INDEX] if 0 <= SCREEN_INDEX < len(QApplication.screens()) else QApplication.primaryScreen()
         size = screen.size()
         if DEBUG_InfiniteScrollWidget:
             logger.info(f"[DEBUG][InfiniteScrollWidget] Exiting sizeHint: return={size}")

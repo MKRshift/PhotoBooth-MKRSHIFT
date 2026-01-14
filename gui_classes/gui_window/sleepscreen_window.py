@@ -3,11 +3,11 @@ logger = logging.getLogger(__name__)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QResizeEvent, QShowEvent, QHideEvent
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
-from gui_classes.gui_window.base_window import BaseWindow
+from gui_classes.gui_window.base_window import BaseWindow, get_screen_info
 from gui_classes.gui_manager.language_manager import language_manager
-from constant import GRID_WIDTH, EASY_KID_ACCESS
+from gui_classes.gui_object.constant import GRID_WIDTH, EASY_KID_ACCESS
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL, SCREEN_INDEX, WINDOW_TITLE
 DEBUG_SleepScreenWindow: bool = DEBUG
 DEBUG_SleepScreenWindow_FULL: bool = DEBUG_FULL
 
@@ -20,7 +20,7 @@ class SleepScreenWindow(BaseWindow):
             logger.info(f"[DEBUG][SleepScreenWindow] Entering __init__: args={{'parent':{parent}}}")
         super().__init__(parent)
         self._default_texts = language_manager.get_texts('WelcomeWidget') or {}
-        self.setWindowTitle("PhotoBooth - Veille")
+        self.setWindowTitle(WINDOW_TITLE)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setStyleSheet("background: transparent;")
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)

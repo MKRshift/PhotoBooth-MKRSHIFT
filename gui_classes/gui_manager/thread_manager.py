@@ -9,12 +9,11 @@ from comfy_classes.comfy_class_API import ImageGeneratorAPIWrapper
 from gui_classes.gui_object.overlay import OverlayCountdown, OverlayLoading
 from gui_classes.gui_object.toolbox import ImageUtils
 from hotspot_classes.hotspot_client import HotspotClient
-from constant import KEEP_GENERATED_IMAGE
 
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL
 DEBUG_CountdownThread = DEBUG
 DEBUG_CountdownThread_FULL = DEBUG_FULL
 
@@ -183,7 +182,7 @@ class CountdownThread(QObject):
 class ImageGenerationThread(QObject):
     finished = Signal(object)
 
-    def __init__(self, style: object, input_image: QImage, api: ImageGeneratorAPIWrapper, parent: QObject = None) -> None:
+    def __init__(self, style: object, input_image: QImage, parent: QObject = None) -> None:
         """
         Initialize the ImageGenerationThread with style, input image, and optional parent.
         """
@@ -192,7 +191,7 @@ class ImageGenerationThread(QObject):
         super().__init__(parent)
         self.style = style
         self.input_image = input_image
-        self.api = api
+        self.api = ImageGeneratorAPIWrapper(style=style, qimg=input_image)
         self._running = True
         self._thread = None
         self._worker = None
@@ -361,12 +360,8 @@ class ImageGenerationThread(QObject):
                         if DEBUG_ImageGenerationThread:
                             logger.info(f"[DEBUG][ImageGenerationWorker] Successfully loaded generated image.")
                         self.finished.emit(qimg)
-                    
-                    self.image_path = self.api.get_latest_image_path()
-                    if not KEEP_GENERATED_IMAGE:
-                        self.api.delete_input_and_output_images()
-                    else:
-                        self.api.move_output_image()
+                        
+                    self.api.delete_input_and_output_images()
                 except Exception as e:
                     if DEBUG_ImageGenerationThread:
                         logger.info(f"[DEBUG][ImageGenerationWorker] Exception: {e}")

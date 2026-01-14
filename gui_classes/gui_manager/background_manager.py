@@ -5,12 +5,10 @@ from PySide6.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
 
 from gui_classes.gui_manager.thread_manager import CameraCaptureThread
 
-from constant import CAMERA_ID, CAMERA_ROTATE_ANGLE
-
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL
 
 DEBUG_BackgroundManager = DEBUG
 DEBUG_BackgroundManager_FULL = DEBUG_FULL
@@ -21,7 +19,7 @@ class BackgroundManager(QObject):
         label: QLabel,
         gradient_path: str = './gui_template/gradient/gradient_1.png',
         resolution_level: int = 0,
-        rotation: int = CAMERA_ROTATE_ANGLE, # degrees: 0, 90, 180, 270
+        rotation: int = 270,
         parent=None
     ) -> None:
         """
@@ -42,7 +40,7 @@ class BackgroundManager(QObject):
         self.gradient_label.setAttribute(Qt.WA_TranslucentBackground)
         self.gradient_label.setStyleSheet("background: transparent;")
         self._init_gradient()
-        self.thread = CameraCaptureThread(camera_id=CAMERA_ID)
+        self.thread = CameraCaptureThread()
         self.thread.set_resolution_level(resolution_level)
         self.thread.frame_ready.connect(self._on_frame_ready)
         self.thread.start()

@@ -1,15 +1,16 @@
 from typing import Optional, Callable
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QApplication
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtGui import QResizeEvent, QIcon
 from gui_classes.gui_window.main_window import MainWindow
+from gui_classes.gui_window.base_window import get_screen_info
 from gui_classes.gui_window.sleepscreen_window import SleepScreenWindow
 from gui_classes.gui_object.scroll_widget import ScrollOverlay
 
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL, WINDOW_TITLE, WINDOW_ICON
 
 DEBUG_TimerUpdateDisplay: bool = DEBUG
 DEBUG_TimerUpdateDisplay_FULL: bool = DEBUG_FULL
@@ -99,7 +100,10 @@ class WindowManager(QWidget):
         if DEBUG_WindowManager:
             logger.info(f"[DEBUG][WindowManager] Entering __init__: args={{}}")
         super().__init__()
-        self.setWindowTitle("PhotoBooth")
+        self.move(get_screen_info().posx, get_screen_info().posy)
+        self.resize(get_screen_info().width, get_screen_info().height)
+        self.setWindowTitle(WINDOW_TITLE)
+        self.setWindowIcon(QIcon(WINDOW_ICON))
         self.setStyleSheet("background: transparent;")
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         
@@ -147,6 +151,7 @@ class WindowManager(QWidget):
         """
         if DEBUG_WindowManager:
             logger.info(f"[DEBUG][WindowManager] Entering start: args={{}}")
+        self.setGeometry(get_screen_info().posx, get_screen_info().posy, get_screen_info().width, get_screen_info().height)
         self.showFullScreen()
         if DEBUG_WindowManager:
             logger.info(f"[DEBUG][WindowManager] Exiting start: return=None")

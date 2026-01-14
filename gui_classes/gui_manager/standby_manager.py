@@ -1,10 +1,11 @@
 from PySide6.QtCore import QTimer, QObject, QEvent
-from constant import DEBUG, SLEEP_TIMER_SECONDS
+from gui_classes.gui_object.constant import DEBUG, SLEEP_TIMER_SECONDS
 
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL
+#from gui_classes.gui_window.main_window import Screeninfo
 
 DEBUG_StandbyManager = DEBUG
 DEBUG_StandbyManager_FULL = DEBUG_FULL

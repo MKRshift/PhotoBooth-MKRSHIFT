@@ -2,7 +2,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL
 
 DEBUG_Module = DEBUG
 DEBUG_ImageUtils = DEBUG
@@ -10,7 +10,7 @@ DEBUG_QRCodeUtils = DEBUG
 DEBUG_OutlinedLabel = DEBUG
 DEBUG_LoadingBar = DEBUG
 
-from constant import COLOR_LOADING_BAR
+from gui_classes.gui_object.constant import COLOR_LOADING_BAR, SCREEN_INDEX
 from PySide6.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout, QProgressBar, QFrame
 from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtGui import QImage, QFont, QPainter, QPen, QColor, QPainterPath
@@ -56,7 +56,7 @@ def normalize_btn_name(btn_name: str) -> str:
     name = btn_name.lower()
     name = unicodedata.normalize('NFD', name).encode('ascii', 'ignore').decode('utf-8')
     name = re.sub(r'[^a-z0-9]+', '_', name)
-    name = name.strip('_')
+    name = name.strip('_').upper()
     result = name
     if DEBUG_Module:
         logger.info(f"[DEBUG][Module] Exiting normalize_btn_name: return={result}")
@@ -119,21 +119,22 @@ class LoadingBar(QWidget):
         if DEBUG_LoadingBar:
             logger.info(f"[DEBUG][LoadingBar] Entering __init__: args={(width_percent, height_percent, border_thickness, parent)}")
         super().__init__(parent)
-        screen_size = QApplication.primaryScreen().size()
-        w = int(screen_size.width() * width_percent)
-        h = int(screen_size.height() * height_percent)
+        #screen_size = QApplication.primaryScreen().size()
+        screen = QApplication.screens()[SCREEN_INDEX] if 0 <= SCREEN_INDEX < len(QApplication.screens()) else QApplication.primaryScreen()
+        w = int(screen.size().width() * width_percent)
+        h = int(screen.size().height() * height_percent)
         self.setFixedSize(w, h)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         corner_radius = int(h * 0.25)
-        bar_height = int(h * 0.4)
+        bar_height = int(h * 0.67)
         frame = QFrame(self)
         frame.setObjectName("frame")
         frame.setGeometry(0, 0, w, h)
         frame.setStyleSheet(
             f"#frame {{"
             f"    background-color: transparent;"
-            f"    border: {border_thickness}px solid {COLOR_LOADING_BAR};"
+            f"    border: {border_thickness}px solid rgb(0, 0, 0);"
             f"    border-radius: {corner_radius}px;"
             f"}}"
         )

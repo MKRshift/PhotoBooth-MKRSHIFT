@@ -11,16 +11,16 @@
     "message_samsung": "1. Open the phone’s camera\n\n2. Hold the camera in front of the QR code until it is scanned.\n\n3. Press “Connect” to connect to the Photo Booth.\n\n4. If a security warning appears, accept it and tap “Connect” again.\n\n5. Open your web app and write photobooth.ml to view and save your photo."
   },
   "OverlayLoading": {
-    "title": "Loading picture...",
+    "title": "CREATING MAGIC",
     "message": "Please wait. It may take a few seconds."
   },
   "WelcomeWidget": {
-    "title": "Welcome to the\nPhoto Booth!",
-    "message": "Strike a pose in front of the camera\n and have fun!\n\nPress the button to begin"
+    "title": "AI PHOTOBOOTH\n",
+    "message": "Strike a pose in front of the camera\n and have fun!\n\nTAP THE SCREEN TO START."
   },
   "main_window": {
     "title": "",
-    "message": "Choose a filter, then press the button and pose!",
+    "message": "Choose a filter\nThen press the button to take photo!",
     "popup":"Select a style first"
   },
   "style":{
@@ -33,7 +33,10 @@
     "minecraft": "Minecraft",
     "pixel art": "Pixel Art",
     "vintage": "Vintage",
-    "disney":"Disney"
+    "disney":"Disney",
+	"watercolor":"Watercolor",
+	"voxel":"Voxel",
+	"tvibit":"Tvibit\nTime\nMachine"
   }
 
 }

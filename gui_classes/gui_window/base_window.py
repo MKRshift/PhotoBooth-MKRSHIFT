@@ -1,7 +1,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from constant import DEBUG, DEBUG_FULL
+from gui_classes.gui_object.constant import DEBUG, DEBUG_FULL
 
 DEBUG_BaseWindow: bool = DEBUG
 DEBUG_BaseWindow_FULL: bool = DEBUG_FULL
@@ -18,28 +18,39 @@ from gui_classes.gui_object.overlay import (
     OverlayLoading, OverlayRules, OverlayQrcode, OverlayLang
 )
 from gui_classes.gui_object.toolbox import normalize_btn_name, QRCodeUtils
-from constant import (
+from gui_classes.gui_object.constant import (
     GRID_WIDTH, GRID_VERTICAL_SPACING, GRID_HORIZONTAL_SPACING,
     GRID_LAYOUT_MARGINS, GRID_LAYOUT_SPACING, GRID_ROW_STRETCHES,
     ICON_BUTTON_STYLE, LOGO_SIZE, INFO_BUTTON_SIZE, HUD_SIZE_RATIO, SHOW_LOGOS,
-    EASY_KID_ACCESS, BTN_STYLE_ONE_ROW, BTN_STYLE_TWO_ROW
+    EASY_KID_ACCESS, BTN_STYLE_ONE_ROW, BTN_STYLE_TWO_ROW, SCREEN_INDEX
 )
 from gui_classes.gui_object.btn import Btns, Btn
 
+class ScreenInfo:
+    def __init__(self):
+        self.idx = SCREEN_INDEX
+        self.data = QApplication.screens()[self.idx] if 0 <= self.idx < len(QApplication.screens()) else QApplication.primaryScreen()
+        self.width = self.data.size().width() if self.data else 1920
+        self.height = self.data.size().height() if self.data else 1080
+        self.posx = self.data.geometry().x() if self.data else 0
+        self.posy = self.data.geometry().y() if self.data else 0
 
-
+def get_screen_info() -> ScreenInfo:
+    return ScreenInfo()
 
 class BaseWindow(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the BaseWindow with an optional parent widget.
         """
+        super().__init__(parent)
         if DEBUG_BaseWindow:
             logger.info(f"[DEBUG][BaseWindow] Entering __init__: args={{'parent': {parent}}}")
-        super().__init__(parent)
+            logger.info(f"\033[91m[DEBUG][BaseWindow] Screen dimensions: width={get_screen_info().width}, height={get_screen_info().height}, posx={get_screen_info().posx}, posy={get_screen_info().posy}\033[0m")
+        # self.move(get_screen_info().posx, get_screen_info().posy)
+        # self.resize(get_screen_info().width, get_screen_info().height)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setStyleSheet("background: transparent;")
-
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self._generation_in_progress = False
         self.loading_overlay = None
@@ -54,7 +65,8 @@ class BaseWindow(QWidget):
         self.overlay_layout.setVerticalSpacing(GRID_VERTICAL_SPACING)
         self.overlay_layout.setHorizontalSpacing(GRID_HORIZONTAL_SPACING)
         self.overlay_widget.setVisible(True)
-        self.overlay_widget.setGeometry(0, 0, 1920, 1080)
+       
+        self.overlay_widget.setGeometry(get_screen_info().posx, get_screen_info().posy, get_screen_info().width, get_screen_info().height)
         self.overlay_widget.raise_()
         self.header_label = QLabel("", self.overlay_widget)
         self.setup_row_stretches()
@@ -67,7 +79,7 @@ class BaseWindow(QWidget):
 
         self.overlay_widget.raise_()
         self.raise_()
-        self._overlays = [] 
+        self._overlays = []
         if DEBUG_BaseWindow:
             logger.info(f"[DEBUG][BaseWindow] Exiting __init__: return=None")
 
@@ -78,7 +90,7 @@ class BaseWindow(QWidget):
         if DEBUG_BaseWindow_FULL:
             logger.info(f"[DEBUG][BaseWindow] Entering resizeEvent: args={{'event': {event}}}")
         self.update()
-        self.overlay_widget.setGeometry(0, 0, self.width(), self.height())
+        self.overlay_widget.setGeometry(get_screen_info().posx, get_screen_info().posy, get_screen_info().width, get_screen_info().height)
         self.overlay_widget.setVisible(True)
         self.overlay_widget.raise_()
         if self.btns:
@@ -145,9 +157,8 @@ class BaseWindow(QWidget):
         if DEBUG_BaseWindow:
             logger.info(f"[DEBUG][BaseWindow] Entering setup_logo: args={{}}")
         layout = QVBoxLayout()
-        screen = QApplication.primaryScreen()
-        screen_height = screen.size().height() if screen else 1080
-        logo_size = int(screen_height * HUD_SIZE_RATIO)
+        
+        logo_size = int(get_screen_info().height * HUD_SIZE_RATIO)
         for path in ("gui_template/base_window/logo1.png", "gui_template/base_window/logo2.png"):
             lbl = QLabel()
             pix = QPixmap(path)
@@ -175,18 +186,18 @@ class BaseWindow(QWidget):
 
         btn_style = (
             f"QPushButton {{"
-            f"background-color: rgba(180,180,180,0.35);"
-            f"border: 2px solid #bbb;"
-            f"border-radius: 24px;"
+            f"background-color: rgba(180,180,180,0.0);"
+            f"border: none;"
+            f"border-radius: 40px;"
             f"min-width: {btn_size}px; min-height: {btn_size}px;"
             f"max-width: {btn_size}px; max-height: {btn_size}px;"
             f"}}"
             f"QPushButton:hover {{"
-            f"border: 2.5px solid white;"
+            f"border: 3px solid white;"
             f"}}"
             f"QPushButton:pressed {{"
-            f"background-color: rgba(220,220,220,0.55);"
-            f"border: 3px solid #eee;"
+            f"background-color: rgba(220,220,220,0.7);"
+            f"border: 2px solid #eee;"
             f"}}"
         )
         lang_btn = QPushButton()
@@ -227,7 +238,7 @@ class BaseWindow(QWidget):
             container_1 = QWidget()
             container_1.setLayout(layout)
             container_1.setAttribute(Qt.WA_TranslucentBackground)
-            container_1.setStyleSheet("background: rgba(0,0,0,0);")
+            container_1.setStyleSheet("background: rgba(0,0,0,1);")
             self.overlay_layout.addWidget(container_1, 0, 0, 1, GRID_WIDTH)
 
             layout_2 = QHBoxLayout()
@@ -466,7 +477,7 @@ class BaseWindow(QWidget):
             if app is not None:
                 old_style = app.styleSheet() or ""
                 try:
-                    from constant import TOOLTIP_STYLE
+                    from gui_classes.gui_object.constant import TOOLTIP_STYLE
                 except ImportError:
                     TOOLTIP_STYLE = ""
                 new_style = re.sub(r"QToolTip\\s*\\{[^}]*\\}", "", old_style)
