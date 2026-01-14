@@ -65,10 +65,11 @@ async function fetchComfyJson(url) {
 }
 
 function getOutputImage(historyItem) {
-  if (!historyItem?.outputs) {
+  const outputs = historyItem?.outputs ?? historyItem?.result?.outputs;
+  if (!outputs) {
     return null;
   }
-  for (const output of Object.values(historyItem.outputs)) {
+  for (const output of Object.values(outputs)) {
     if (output?.images?.length) {
       return output.images[0];
     }
@@ -182,19 +183,22 @@ const server = http.createServer((req, res) => {
       .then((results) => {
         const progressResult = results[0].status === "fulfilled" ? results[0].value : null;
         const historyResult = results[1].status === "fulfilled" ? results[1].value : null;
-        const historyItem = historyResult?.[promptId];
+        const historyItem =
+          historyResult?.[promptId] ??
+          historyResult?.history?.[promptId] ??
+          historyResult;
         const outputImage = getOutputImage(historyItem);
+        const progressPayload = progressResult?.progress ?? progressResult ?? {};
         const progressValue =
-          progressResult?.value ??
-          progressResult?.progress?.value ??
-          progressResult?.current ??
-          progressResult?.progress?.current ??
+          progressPayload.value ??
+          progressPayload.current ??
+          progressPayload.step ??
+          progressPayload.steps ??
           0;
         const progressMax =
-          progressResult?.max ??
-          progressResult?.progress?.max ??
-          progressResult?.total ??
-          progressResult?.progress?.total ??
+          progressPayload.max ??
+          progressPayload.total ??
+          progressPayload.steps_total ??
           0;
         const percent =
           typeof progressValue === "number" && typeof progressMax === "number" && progressMax > 0
