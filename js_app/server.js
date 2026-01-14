@@ -21,7 +21,7 @@ const galleryOutputDir = path.join(galleryDir, "output");
 const comfyInputPath =
   process.env.COMFY_INPUT_PATH ?? path.join(rootDir, "ComfyUI", "input", "input.png");
 const comfyServerUrl = process.env.COMFY_SERVER_URL ?? "http://127.0.0.1:8188";
-const imgurClientId = process.env.IMGUR_CLIENT_ID ?? "";
+const freeimageHostKey = process.env.FREEIMAGE_HOST_KEY ?? "";
 const printerCommand = process.env.PRINTER_COMMAND ?? "";
 const comfyHistoryUrl = `${comfyServerUrl}/history`;
 const comfyProgressUrl = `${comfyServerUrl}/progress`;
@@ -586,13 +586,13 @@ const server = http.createServer((req, res) => {
     readJsonBody(req)
       .then(async (payload) => {
         const imageUrl = payload.imageUrl;
-        const clientId =
-          typeof payload.clientId === "string" && payload.clientId.trim()
-            ? payload.clientId.trim()
-            : imgurClientId;
-        if (!clientId) {
+        const apiKey =
+          typeof payload.apiKey === "string" && payload.apiKey.trim()
+            ? payload.apiKey.trim()
+            : freeimageHostKey;
+        if (!apiKey) {
           res.writeHead(501);
-          res.end("IMGUR_CLIENT_ID not configured");
+          res.end("FREEIMAGE_HOST_KEY not configured");
           return;
         }
         if (!imageUrl) {
@@ -603,35 +603,38 @@ const server = http.createServer((req, res) => {
         const resolvedUrl = buildLocalUrl(req, imageUrl);
         const base64 = await readImageAsBase64(resolvedUrl);
         const formData = new FormData();
-        formData.append("image", base64);
-        formData.append("type", "base64");
-        const imgurResponse = await fetch("https://api.imgur.com/3/image", {
+        formData.append("key", apiKey);
+        formData.append("source", base64);
+        formData.append("format", "json");
+        const uploadResponse = await fetch("https://freeimage.host/api/1/upload", {
           method: "POST",
-          headers: {
-            Authorization: `Client-ID ${clientId}`,
-          },
           body: formData,
         });
         let result = null;
         try {
-          result = await imgurResponse.json();
+          result = await uploadResponse.json();
         } catch (error) {
           // ignore parse errors
         }
-        if (!imgurResponse.ok) {
+        if (!uploadResponse.ok) {
           const message =
-            result?.data?.error ??
+            result?.status_txt ??
             result?.error ??
-            (await imgurResponse.text().catch(() => "")) ??
+            result?.message ??
+            (await uploadResponse.text().catch(() => "")) ??
             "";
-          throw new Error(message || "Imgur upload failed");
+          throw new Error(message || "Upload failed");
         }
         if (!result) {
-          throw new Error("Imgur response missing JSON");
+          throw new Error("Upload response missing JSON");
         }
-        const link = result?.data?.link;
+        const link =
+          result?.image?.url ??
+          result?.image?.display_url ??
+          result?.data?.link ??
+          result?.url;
         if (!link) {
-          throw new Error("Missing Imgur link");
+          throw new Error("Missing upload link");
         }
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
           link

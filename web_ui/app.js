@@ -17,7 +17,7 @@ const settingsToggle = document.querySelector(".settings-toggle");
 const fullscreenToggle = document.querySelector(".fullscreen-toggle");
 const settingsModal = document.querySelector(".settings-modal");
 const settingsPrinterInput = document.querySelector(".settings-input--printer");
-const settingsImgurInput = document.querySelector(".settings-input--imgur");
+const settingsFreeimageInput = document.querySelector(".settings-input--freeimage");
 const settingsEnabledInput = document.querySelector(".settings-input--enabled");
 const settingsSave = document.querySelector(".settings-action--save");
 const settingsClose = document.querySelector(".settings-action--close");
@@ -37,7 +37,7 @@ let progressPoller = null;
 let outputReady = false;
 let lastOutputUrl = null;
 let printerConfig = { name: "", enabled: false };
-let imgurClientId = "";
+let freeimageApiKey = "";
 
 function toTitleCase(value) {
   return value
@@ -300,17 +300,17 @@ function loadPrinterConfig() {
     if (raw) {
       printerConfig = JSON.parse(raw);
     }
-    const imgurRaw = localStorage.getItem("imgurClientId");
-    if (imgurRaw) {
-      imgurClientId = imgurRaw;
+    const freeimageRaw = localStorage.getItem("freeimageApiKey");
+    if (freeimageRaw) {
+      freeimageApiKey = freeimageRaw;
     }
   } catch (error) {
     printerConfig = { name: "", enabled: false };
-    imgurClientId = "";
+    freeimageApiKey = "";
   }
   settingsPrinterInput.value = printerConfig.name || "";
   settingsEnabledInput.checked = Boolean(printerConfig.enabled);
-  settingsImgurInput.value = imgurClientId || "";
+  settingsFreeimageInput.value = freeimageApiKey || "";
   printButton.disabled = !printerConfig.enabled || !printerConfig.name || !outputReady;
 }
 
@@ -320,8 +320,8 @@ function savePrinterConfig() {
     enabled: settingsEnabledInput.checked,
   };
   localStorage.setItem("printerConfig", JSON.stringify(printerConfig));
-  imgurClientId = settingsImgurInput.value.trim();
-  localStorage.setItem("imgurClientId", imgurClientId);
+  freeimageApiKey = settingsFreeimageInput.value.trim();
+  localStorage.setItem("freeimageApiKey", freeimageApiKey);
   printButton.disabled = !printerConfig.enabled || !printerConfig.name || !outputReady;
 }
 
@@ -393,7 +393,7 @@ async function loadGallery() {
   }
 }
 
-async function uploadToImgur() {
+async function uploadToFreeimage() {
   if (!lastOutputUrl) {
     return;
   }
@@ -402,7 +402,7 @@ async function uploadToImgur() {
     const response = await fetch("/api/upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: lastOutputUrl, clientId: imgurClientId }),
+      body: JSON.stringify({ imageUrl: lastOutputUrl, apiKey: freeimageApiKey }),
     });
     if (!response.ok) {
       const message = await response.text();
@@ -417,7 +417,7 @@ async function uploadToImgur() {
     statusMeta.textContent = "Scan the QR code to view the image.";
   } catch (error) {
     statusLabel.textContent = "Upload Failed";
-    statusMeta.textContent = error?.message || "Unable to upload to Imgur.";
+    statusMeta.textContent = error?.message || "Unable to upload the image.";
   } finally {
     uploadButton.disabled = false;
   }
@@ -491,7 +491,7 @@ settingsSave.addEventListener("click", () => {
 settingsClose.addEventListener("click", closeSettings);
 galleryToggle.addEventListener("click", openGallery);
 galleryClose.addEventListener("click", closeGallery);
-uploadButton.addEventListener("click", uploadToImgur);
+uploadButton.addEventListener("click", uploadToFreeimage);
 printButton.addEventListener("click", sendToPrinter);
 doneButton.addEventListener("click", () => {
   if (!outputReady) {
