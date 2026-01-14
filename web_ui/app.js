@@ -413,7 +413,16 @@ function setGallerySelection(item) {
 
 function applyCameraOrientation() {
   const orientation = Number(cameraOrientation) || 0;
-  video.style.transform = orientation ? `rotate(${orientation}deg)` : "";
+  const container = appRoot.getBoundingClientRect();
+  const containerRatio =
+    container.width && container.height ? container.width / container.height : 1;
+  const rotated = orientation === 90 || orientation === 270;
+  const scale = rotated ? Math.min(containerRatio, 1 / containerRatio) : 1;
+  if (orientation) {
+    video.style.transform = `rotate(${orientation}deg) scale(${scale})`;
+  } else {
+    video.style.transform = "";
+  }
   video.style.transformOrigin = "center";
 }
 
@@ -600,6 +609,7 @@ doneButton.addEventListener("click", () => {
   statusMeta.textContent = "Select a style, then tap or shake to shoot";
 });
 window.addEventListener("devicemotion", handleShake);
+window.addEventListener("resize", applyCameraOrientation);
 
 startCamera();
 loadStyles();
