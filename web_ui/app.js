@@ -133,16 +133,20 @@ function hideIdleOverlay() {
   stopIdleSlideshow();
 }
 
-function resetIdleTimer() {
+function scheduleIdleTimer() {
   if (idleTimer) {
     clearTimeout(idleTimer);
-  }
-  if (!idleOverlay?.classList.contains("idle-overlay--hidden")) {
-    hideIdleOverlay();
   }
   idleTimer = setTimeout(() => {
     showIdleOverlay();
   }, idleTimeoutMs);
+}
+
+function handleUserActivity() {
+  if (!idleOverlay?.classList.contains("idle-overlay--hidden")) {
+    hideIdleOverlay();
+  }
+  scheduleIdleTimer();
 }
 
 async function startCamera() {
@@ -770,11 +774,11 @@ doneButton.addEventListener("click", () => {
 window.addEventListener("devicemotion", handleShake);
 window.addEventListener("resize", applyCameraOrientation);
 ["pointerdown", "mousemove", "keydown", "touchstart", "wheel"].forEach((eventName) => {
-  window.addEventListener(eventName, resetIdleTimer, { passive: true });
+  window.addEventListener(eventName, handleUserActivity, { passive: true });
 });
 
 startCamera();
 loadStyles();
 loadPrinterConfig();
 showIdleOverlay();
-resetIdleTimer();
+scheduleIdleTimer();
