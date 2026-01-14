@@ -423,9 +423,6 @@ function applyCameraOrientation() {
   const orientation = getOrientationDegrees(cameraOrientation);
   const rotated = Math.abs(orientation) === 90;
   const container = appRoot.getBoundingClientRect();
-  const containerRatio =
-    container.width && container.height ? container.width / container.height : 1;
-  const scale = rotated ? Math.min(containerRatio, 1 / containerRatio) : 1;
   if (orientation) {
     video.style.top = "50%";
     video.style.left = "50%";
@@ -433,7 +430,7 @@ function applyCameraOrientation() {
       video.style.width = `${container.height}px`;
       video.style.height = `${container.width}px`;
     }
-    video.style.transform = `translate(-50%, -50%) rotate(${orientation}deg) scale(${scale})`;
+    video.style.transform = `translate(-50%, -50%) rotate(${orientation}deg)`;
   } else {
     video.style.top = "";
     video.style.left = "";
