@@ -583,14 +583,18 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.url.startsWith("/api/upload") && req.method === "POST") {
-    if (!imgurClientId) {
-      res.writeHead(501);
-      res.end("IMGUR_CLIENT_ID not configured");
-      return;
-    }
     readJsonBody(req)
       .then(async (payload) => {
         const imageUrl = payload.imageUrl;
+        const clientId =
+          typeof payload.clientId === "string" && payload.clientId.trim()
+            ? payload.clientId.trim()
+            : imgurClientId;
+        if (!clientId) {
+          res.writeHead(501);
+          res.end("IMGUR_CLIENT_ID not configured");
+          return;
+        }
         if (!imageUrl) {
           res.writeHead(400);
           res.end("Missing imageUrl");
@@ -604,7 +608,7 @@ const server = http.createServer((req, res) => {
         const imgurResponse = await fetch("https://api.imgur.com/3/image", {
           method: "POST",
           headers: {
-            Authorization: `Client-ID ${imgurClientId}`,
+            Authorization: `Client-ID ${clientId}`,
           },
           body: formData,
         });
