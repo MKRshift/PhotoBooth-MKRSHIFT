@@ -46,7 +46,7 @@ function handleComfySocketMessage(message) {
   if (!message?.type || !message?.data) {
     return;
   }
-  if (message.type === "progress_state") {
+  if (message.type === "progress_state" || message.type === "progress") {
     const value = Number(message.data.value ?? 0);
     const max = Number(message.data.max ?? 0);
     const percent =
