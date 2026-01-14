@@ -27,6 +27,10 @@ const galleryClose = document.querySelector(".gallery-close");
 const galleryList = document.querySelector(".gallery-list");
 const galleryInputImage = document.querySelector(".gallery-image--input");
 const galleryOutputImage = document.querySelector(".gallery-image--output");
+const galleryUploadButton = document.querySelector(".gallery-action--upload");
+const galleryUploadStatus = document.querySelector(".gallery-upload-status");
+const galleryQr = document.querySelector(".gallery-qr");
+const galleryQrImage = document.querySelector(".gallery-qr-image");
 
 let selectedStyle = null;
 let isQueueing = false;
@@ -38,6 +42,7 @@ let outputReady = false;
 let lastOutputUrl = null;
 let printerConfig = { name: "", enabled: false };
 let freeimageApiKey = "";
+let selectedGalleryUrl = "";
 
 function toTitleCase(value) {
   return value
@@ -336,11 +341,29 @@ function closeSettings() {
 
 function openGallery() {
   galleryModal.classList.add("gallery-modal--open");
+  galleryUploadStatus.textContent = "";
+  galleryQr.style.display = "none";
+  galleryQrImage.src = "";
   loadGallery();
 }
 
 function closeGallery() {
   galleryModal.classList.remove("gallery-modal--open");
+}
+
+function setGallerySelection(item) {
+  if (!item) {
+    selectedGalleryUrl = "";
+    galleryUploadButton.disabled = true;
+    return;
+  }
+  selectedGalleryUrl = item.outputUrl;
+  galleryInputImage.src = item.inputUrl;
+  galleryOutputImage.src = item.outputUrl;
+  galleryUploadButton.disabled = false;
+  galleryUploadStatus.textContent = "";
+  galleryQr.style.display = "none";
+  galleryQrImage.src = "";
 }
 
 function toggleFullscreen() {
@@ -358,6 +381,7 @@ function renderGalleryItems(items) {
     empty.textContent = "No results yet.";
     empty.style.opacity = "0.6";
     galleryList.appendChild(empty);
+    setGallerySelection(null);
     return;
   }
   items.forEach((item) => {
@@ -371,13 +395,11 @@ function renderGalleryItems(items) {
     row.appendChild(thumb);
     row.appendChild(label);
     row.addEventListener("click", () => {
-      galleryInputImage.src = item.inputUrl;
-      galleryOutputImage.src = item.outputUrl;
+      setGallerySelection(item);
     });
     galleryList.appendChild(row);
   });
-  galleryInputImage.src = items[0].inputUrl;
-  galleryOutputImage.src = items[0].outputUrl;
+  setGallerySelection(items[0]);
 }
 
 async function loadGallery() {
@@ -393,22 +415,26 @@ async function loadGallery() {
   }
 }
 
+async function uploadImage(imageUrl) {
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageUrl, apiKey: freeimageApiKey }),
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Upload failed");
+  }
+  return response.json();
+}
+
 async function uploadToFreeimage() {
   if (!lastOutputUrl) {
     return;
   }
   uploadButton.disabled = true;
   try {
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: lastOutputUrl, apiKey: freeimageApiKey }),
-    });
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || "Upload failed");
-    }
-    const data = await response.json();
+    const data = await uploadImage(lastOutputUrl);
     if (data.qrUrl) {
       qrImage.src = data.qrUrl;
       qrContainer.style.display = "flex";
@@ -420,6 +446,26 @@ async function uploadToFreeimage() {
     statusMeta.textContent = error?.message || "Unable to upload the image.";
   } finally {
     uploadButton.disabled = false;
+  }
+}
+
+async function uploadGallerySelection() {
+  if (!selectedGalleryUrl) {
+    return;
+  }
+  galleryUploadButton.disabled = true;
+  galleryUploadStatus.textContent = "Uploading...";
+  try {
+    const data = await uploadImage(selectedGalleryUrl);
+    if (data.qrUrl) {
+      galleryQrImage.src = data.qrUrl;
+      galleryQr.style.display = "flex";
+    }
+    galleryUploadStatus.textContent = "Upload complete.";
+  } catch (error) {
+    galleryUploadStatus.textContent = error?.message || "Upload failed.";
+  } finally {
+    galleryUploadButton.disabled = false;
   }
 }
 
@@ -491,6 +537,7 @@ settingsSave.addEventListener("click", () => {
 settingsClose.addEventListener("click", closeSettings);
 galleryToggle.addEventListener("click", openGallery);
 galleryClose.addEventListener("click", closeGallery);
+galleryUploadButton.addEventListener("click", uploadGallerySelection);
 uploadButton.addEventListener("click", uploadToFreeimage);
 printButton.addEventListener("click", sendToPrinter);
 doneButton.addEventListener("click", () => {
