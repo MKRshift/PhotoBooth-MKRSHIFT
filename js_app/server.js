@@ -233,25 +233,31 @@ const server = http.createServer((req, res) => {
             ? `/api/gallery/image?type=output&name=${encodeURIComponent(`${captureId}.png`)}`
             : null;
         const progressPayload = progressResult?.progress ?? progressResult ?? {};
-        const progressValue = Number(
-          progressPayload.value ??
-            progressPayload.current ??
-            progressPayload.step ??
-            progressPayload.steps ??
-            0
-        );
-        const progressMax = Number(
-          progressPayload.max ??
-            progressPayload.total ??
-            progressPayload.steps_total ??
-            0
-        );
-        const percent =
-          Number.isFinite(progressValue) && Number.isFinite(progressMax) && progressMax > 0
-            ? (progressValue / progressMax) * 100
-            : historyItem?.status?.completed
-              ? 100
+        let percent = 0;
+        if (typeof progressPayload === "number" && Number.isFinite(progressPayload)) {
+          percent = progressPayload <= 1 ? progressPayload * 100 : progressPayload;
+        } else {
+          const progressValue = Number(
+            progressPayload.value ??
+              progressPayload.current ??
+              progressPayload.step ??
+              progressPayload.steps ??
+              0
+          );
+          const progressMax = Number(
+            progressPayload.max ??
+              progressPayload.total ??
+              progressPayload.steps_total ??
+              0
+          );
+          percent =
+            Number.isFinite(progressValue) && Number.isFinite(progressMax) && progressMax > 0
+              ? (progressValue / progressMax) * 100
               : 0;
+        }
+        if (!Number.isFinite(percent) || percent <= 0) {
+          percent = historyItem?.status?.completed ? 100 : 0;
+        }
         const responsePayload = {
           percent,
           label: historyItem?.status?.completed ? "Complete" : "Sampling",
