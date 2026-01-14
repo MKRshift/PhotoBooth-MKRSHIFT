@@ -61,12 +61,38 @@ function normalizeComfyServerUrl(value) {
   }
 }
 
+function normalizePreviewImage(raw) {
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.startsWith("data:image/")) {
+    return trimmed;
+  }
+  const base64Pattern = /^[A-Za-z0-9+/=]+$/;
+  if (base64Pattern.test(trimmed) && trimmed.length > 64) {
+    return `data:image/png;base64,${trimmed}`;
+  }
+  return null;
+}
+
 function buildPreviewUrl(preview) {
   if (!preview) {
     return null;
   }
   if (typeof preview === "string") {
-    return `${comfyViewUrl}?filename=${encodeURIComponent(preview)}`;
+    return normalizePreviewImage(preview) ??
+      `${comfyViewUrl}?filename=${encodeURIComponent(preview)}`;
+  }
+  const inlinePreview =
+    normalizePreviewImage(preview.image) ??
+    normalizePreviewImage(preview.preview) ??
+    normalizePreviewImage(preview.data);
+  if (inlinePreview) {
+    return inlinePreview;
   }
   const filename = preview.filename ?? preview.image ?? preview.name;
   if (!filename) {
@@ -77,6 +103,17 @@ function buildPreviewUrl(preview) {
   return `${comfyViewUrl}?filename=${encodeURIComponent(filename)}&type=${encodeURIComponent(
     type
   )}&subfolder=${encodeURIComponent(subfolder)}`;
+}
+
+function resolvePreviewPayload(progressResult) {
+  return (
+    progressResult?.preview ??
+    progressResult?.state?.preview ??
+    progressResult?.progress?.preview ??
+    progressResult?.preview_image ??
+    progressResult?.previewImage ??
+    null
+  );
 }
 
 function updateProgressFromSocket(payload) {
@@ -504,7 +541,12 @@ const server = http.createServer((req, res) => {
         const socketFresh =
           typeof socketProgress?.updatedAt === "number" &&
           Date.now() - socketProgress.updatedAt < 10_000;
-        const progressPayload = progressResult?.progress ?? progressResult ?? {};
+        const progressPayload =
+          progressResult?.progress ??
+          progressResult?.state ??
+          progressResult?.state?.progress ??
+          progressResult ??
+          {};
         const polledPercent = parseComfyProgressPercent(progressPayload);
         let percent = socketFresh
           ? Math.max(socketPercent, polledPercent)
@@ -530,7 +572,7 @@ const server = http.createServer((req, res) => {
                 outputImage.type ?? "output"
               }&subfolder=${encodeURIComponent(outputImage.subfolder ?? "")}`
             : fallbackOutputUrl,
-          previewUrl: buildPreviewUrl(progressResult?.preview),
+          previewUrl: buildPreviewUrl(resolvePreviewPayload(progressResult)),
         };
         if (captureId && outputImage && !outputSaved.has(promptId)) {
           fetchComfyImageBuffer(outputImage)
