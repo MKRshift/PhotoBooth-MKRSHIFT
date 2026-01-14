@@ -47,17 +47,27 @@ function updateProgressFromSocket(payload) {
 
 function buildWorkflowStepMeta(workflow) {
   const nodeSteps = new Map();
+  const samplerSteps = new Map();
   let totalSteps = 0;
+  let samplerTotal = 0;
   Object.entries(workflow ?? {}).forEach(([nodeId, node]) => {
     const steps = node?.inputs?.steps;
     if (typeof steps === "number" && Number.isFinite(steps) && steps > 0) {
       nodeSteps.set(nodeId, steps);
       totalSteps += steps;
     }
+    if (typeof node?.class_type === "string" && /ksampler/i.test(node.class_type)) {
+      if (typeof steps === "number" && Number.isFinite(steps) && steps > 0) {
+        samplerSteps.set(nodeId, steps);
+        samplerTotal += steps;
+      }
+    }
   });
+  const activeSteps = samplerTotal > 0 ? samplerSteps : nodeSteps;
+  const activeTotal = samplerTotal > 0 ? samplerTotal : totalSteps;
   return {
-    nodeSteps,
-    totalSteps,
+    nodeSteps: activeSteps,
+    totalSteps: activeTotal,
     nodeProgress: new Map(),
   };
 }
@@ -271,11 +281,7 @@ function getOutputImage(historyItem) {
       return null;
     }
     const outputImage = images.find((image) => image?.type === "output");
-    if (outputImage) {
-      return outputImage;
-    }
-    const nonInputImage = images.find((image) => image && image.type !== "input");
-    return nonInputImage ?? null;
+    return outputImage ?? null;
   };
   if (outputs) {
     for (const output of Object.values(outputs)) {
