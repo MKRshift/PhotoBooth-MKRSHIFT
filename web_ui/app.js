@@ -1,3 +1,5 @@
+import { initIdleOverlay } from "./idle.js";
+
 const video = document.querySelector("#camera");
 const stylesContainer = document.querySelector(".styles");
 const statusLabel = document.querySelector(".status__label");
@@ -13,9 +15,6 @@ const doneButton = document.querySelector(".progress-action--done");
 const qrContainer = document.querySelector(".progress__qr");
 const qrImage = document.querySelector(".progress__qr-image");
 const appRoot = document.querySelector(".app");
-const idleOverlay = document.querySelector(".idle-overlay");
-const idlePrimaryGrid = document.querySelector(".idle-overlay__grid--primary");
-const idleSecondaryGrid = document.querySelector(".idle-overlay__grid--secondary");
 const settingsToggle = document.querySelector(".settings-toggle");
 const fullscreenToggle = document.querySelector(".fullscreen-toggle");
 const settingsModal = document.querySelector(".settings-modal");
@@ -54,8 +53,7 @@ const defaultComfyServerUrl = "http://127.0.0.1:8188";
 let comfyServerUrl = defaultComfyServerUrl;
 let cameraOrientation = 0;
 let watermarkEnabled = false;
-const idleTimeoutMs = 5 * 60 * 1000;
-let idleTimer = null;
+const idleController = initIdleOverlay({ timeoutMs: 5 * 60 * 1000 });
 
 function toTitleCase(value) {
   return value
@@ -72,76 +70,6 @@ function getOrientationDegrees(value) {
   return orientation;
 }
 
-async function loadIdleImages() {
-  if (!idlePrimaryGrid || !idleSecondaryGrid) {
-    return;
-  }
-  try {
-    const response = await fetch("/api/idle-images");
-    if (!response.ok) {
-      throw new Error("Idle images unavailable");
-    }
-    const data = await response.json();
-    const images = Array.from(data.images ?? []);
-    for (let i = images.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [images[i], images[j]] = [images[j], images[i]];
-    }
-    const minTiles = 96;
-    const tiles = images.length
-      ? Array.from({ length: minTiles }, (_, index) => images[index % images.length])
-      : [];
-    const buildGrid = (grid) => {
-      const fragment = document.createDocumentFragment();
-      tiles.forEach((src) => {
-        const tile = document.createElement("div");
-        tile.className = "idle-overlay__tile";
-        const img = document.createElement("img");
-        img.src = src;
-        img.alt = "";
-        tile.appendChild(img);
-        fragment.appendChild(tile);
-      });
-      grid.innerHTML = "";
-      grid.appendChild(fragment);
-    };
-    buildGrid(idlePrimaryGrid);
-    buildGrid(idleSecondaryGrid);
-  } catch (error) {
-    idlePrimaryGrid.innerHTML = "";
-    idleSecondaryGrid.innerHTML = "";
-  }
-}
-
-function showIdleOverlay() {
-  if (!idleOverlay) {
-    return;
-  }
-  idleOverlay.classList.remove("idle-overlay--hidden");
-}
-
-function hideIdleOverlay() {
-  if (!idleOverlay) {
-    return;
-  }
-  idleOverlay.classList.add("idle-overlay--hidden");
-}
-
-function scheduleIdleTimer() {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
-  idleTimer = setTimeout(() => {
-    showIdleOverlay();
-  }, idleTimeoutMs);
-}
-
-function handleUserActivity() {
-  if (!idleOverlay?.classList.contains("idle-overlay--hidden")) {
-    hideIdleOverlay();
-  }
-  scheduleIdleTimer();
-}
 
 async function startCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -768,12 +696,12 @@ doneButton.addEventListener("click", () => {
 window.addEventListener("devicemotion", handleShake);
 window.addEventListener("resize", applyCameraOrientation);
 ["pointerdown", "mousemove", "keydown", "touchstart", "wheel"].forEach((eventName) => {
-  window.addEventListener(eventName, handleUserActivity, { passive: true });
+  window.addEventListener(eventName, idleController.handleUserActivity, { passive: true });
 });
 
 startCamera();
 loadStyles();
 loadPrinterConfig();
-loadIdleImages();
-showIdleOverlay();
-scheduleIdleTimer();
+idleController.loadImages();
+idleController.show();
+idleController.schedule();
