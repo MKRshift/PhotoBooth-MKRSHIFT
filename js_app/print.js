@@ -54,7 +54,7 @@ function getDefaultPrintCommand() {
       "  $e.Graphics.PageUnit = [System.Drawing.GraphicsUnit]::Pixel;",
       "  $e.Graphics.TranslateTransform(-$e.PageSettings.HardMarginX, -$e.PageSettings.HardMarginY);",
       "  $bounds = $e.PageBounds;",
-      "  $ratio = [Math]::Min($bounds.Width / $printImg.Width, $bounds.Height / $printImg.Height);",
+      "  $ratio = [Math]::Max($bounds.Width / $printImg.Width, $bounds.Height / $printImg.Height);",
       "  $w = [int]($printImg.Width * $ratio);",
       "  $h = [int]($printImg.Height * $ratio);",
       "  $x = $bounds.Left + [int](($bounds.Width - $w) / 2);",
