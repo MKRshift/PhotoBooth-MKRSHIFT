@@ -121,6 +121,35 @@ function connectSocket() {
       // ignore malformed messages
     }
   });
+  socket.addEventListener("message", (event) => {
+    if (!event?.data) {
+      return;
+    }
+    try {
+      const payload = JSON.parse(event.data);
+      if (payload?.type === "style" && typeof payload.style === "string") {
+        setSelectedStyle(payload.style, { announce: false });
+      }
+      if (payload?.type === "progress") {
+        const percent = Math.max(0, Math.min(100, Math.round(payload.percent ?? 0)));
+        const label = payload.label ?? "Working";
+        updateProgressDisplay({ label, percent });
+        if (payload.complete) {
+          setRemoteBusy(false);
+        } else {
+          setRemoteBusy(
+            payload.status === "queueing" ||
+              payload.status === "queued" ||
+              payload.status === "generating" ||
+              payload.status === "busy" ||
+              payload.status === "waiting"
+          );
+        }
+      }
+    } catch (error) {
+      // ignore malformed messages
+    }
+  });
 }
 
 function sendCapture() {
