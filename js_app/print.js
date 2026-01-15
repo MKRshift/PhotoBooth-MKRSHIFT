@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
 
-function parsePrinterList(output) {
+function parsePrinterList(output, { isWindows = false } = {}) {
   if (!output) {
     return [];
   }
@@ -9,6 +9,9 @@ function parsePrinterList(output) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
+      if (isWindows) {
+        return line;
+      }
       if (line.startsWith("printer ")) {
         const parts = line.split(/\s+/);
         return parts[1] ?? "";
@@ -93,7 +96,7 @@ function listPrinters(listCommand) {
         resolve([]);
         return;
       }
-      resolve(parsePrinterList(stdout));
+      resolve(parsePrinterList(stdout, { isWindows: process.platform === "win32" }));
     });
   });
 }
