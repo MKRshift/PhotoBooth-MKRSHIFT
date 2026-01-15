@@ -31,7 +31,7 @@ function getDefaultPrintCommand() {
       "$img = [System.Drawing.Image]::FromFile($file);",
       "$doc = New-Object System.Drawing.Printing.PrintDocument;",
       "if ($printer) { $doc.PrinterSettings.PrinterName = $printer; }",
-      "$doc.PrintPage += { param($sender, $e)",
+      "$doc.add_PrintPage({ param($sender, $e)",
       "  $bounds = $e.MarginBounds;",
       "  $ratio = [Math]::Min($bounds.Width / $img.Width, $bounds.Height / $img.Height);",
       "  $w = [int]($img.Width * $ratio);",
@@ -40,7 +40,7 @@ function getDefaultPrintCommand() {
       "  $y = $bounds.Top + [int](($bounds.Height - $h) / 2);",
       "  $e.Graphics.DrawImage($img, $x, $y, $w, $h);",
       "  $e.HasMorePages = $false;",
-      "};",
+      "});",
       "for ($i = 0; $i -lt $copies; $i++) { $doc.Print(); }",
       "$img.Dispose();",
       '"'
