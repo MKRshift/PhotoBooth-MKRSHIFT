@@ -63,6 +63,7 @@ let countdownTimer = null;
 let countdownActive = false;
 let remoteSocket = null;
 let remoteSocketReconnect = null;
+let lastRemoteProgress = { status: "ready", label: "Ready", percent: 0, complete: false };
 const defaultComfyServerUrl = "http://127.0.0.1:8188";
 let comfyServerUrl = defaultComfyServerUrl;
 let cameraOrientation = 0;
@@ -189,6 +190,14 @@ function connectRemoteSocket() {
       if (payload?.type === "style" && typeof payload.style === "string") {
         applyStyleSelection(payload.style, { source: payload.source ?? "remote" });
       }
+      if (payload?.type === "status-request") {
+        if (selectedStyle) {
+          sendRemoteMessage({ type: "style", style: selectedStyle, source: "booth" });
+        }
+        if (lastRemoteProgress) {
+          sendRemoteMessage({ type: "progress", ...lastRemoteProgress, source: "booth" });
+        }
+      }
     } catch (error) {
       // ignore malformed messages
     }
@@ -234,6 +243,7 @@ function applyStyleSelection(style, { source = "booth", announce = true } = {}) 
 }
 
 function updateRemoteProgress(payload) {
+  lastRemoteProgress = { ...payload };
   sendRemoteMessage({ type: "progress", ...payload, source: "booth" });
 }
 
@@ -578,12 +588,13 @@ function setBusy(isBusy) {
   currentPromptId = null;
   outputReady = false;
   lastOutputUrl = null;
-  updateRemoteProgress({
+  lastRemoteProgress = {
     status: "ready",
     label: "Ready",
     percent: 0,
     complete: false,
-  });
+  };
+  updateRemoteProgress(lastRemoteProgress);
 }
 
 function loadPrinterConfig() {

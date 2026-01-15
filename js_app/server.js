@@ -918,6 +918,13 @@ remoteWss.on("connection", (socket) => {
           style,
           source: payload.source ?? "remote",
         });
+        return;
+      }
+      if (payload?.type === "status-request") {
+        broadcastRemote({
+          type: "status-request",
+          source: payload.source ?? "remote",
+        });
       }
     } catch (error) {
       // ignore malformed messages

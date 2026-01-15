@@ -80,13 +80,46 @@ function connectSocket() {
     if (selectedStyle) {
       sendStyle(selectedStyle);
     }
+    socket.send(JSON.stringify({ type: "status-request", source: "remote" }));
   });
   socket.addEventListener("close", () => {
     setStatus("Disconnected. Reconnecting…");
     reconnectTimer = setTimeout(connectSocket, 1500);
+    setRemoteBusy(false);
+    updateProgressDisplay({ label: "Disconnected", percent: 0 });
   });
   socket.addEventListener("error", () => {
     setStatus("Connection error. Reconnecting…");
+    setRemoteBusy(false);
+  });
+  socket.addEventListener("message", (event) => {
+    if (!event?.data) {
+      return;
+    }
+    try {
+      const payload = JSON.parse(event.data);
+      if (payload?.type === "style" && typeof payload.style === "string") {
+        setSelectedStyle(payload.style, { announce: false });
+      }
+      if (payload?.type === "progress") {
+        const percent = Math.max(0, Math.min(100, Math.round(payload.percent ?? 0)));
+        const label = payload.label ?? "Working";
+        updateProgressDisplay({ label, percent });
+        if (payload.complete) {
+          setRemoteBusy(false);
+        } else {
+          setRemoteBusy(
+            payload.status === "queueing" ||
+              payload.status === "queued" ||
+              payload.status === "generating" ||
+              payload.status === "busy" ||
+              payload.status === "waiting"
+          );
+        }
+      }
+    } catch (error) {
+      // ignore malformed messages
+    }
   });
   socket.addEventListener("message", (event) => {
     if (!event?.data) {
@@ -202,69 +235,6 @@ async function loadStyles() {
     }
     if (remoteBusy) {
       setRemoteBusy(true);
-    }
-  } catch (error) {
-    setStyleStatus("Unable to load styles.");
-  }
-}
-
-function sendStyle(style) {
-  if (!socket || socket.readyState !== WebSocket.OPEN) {
-    setStatus("Not connected yet.");
-    return;
-  }
-  socket.send(
-    JSON.stringify({
-      type: "style",
-      style,
-      source: "remote",
-    })
-  );
-  setStatus(`Style sent: ${toTitleCase(style)}`);
-}
-
-function setSelectedStyle(style, { announce = true } = {}) {
-  selectedStyle = style;
-  const styleButtons = Array.from(document.querySelectorAll(".remote-style"));
-  styleButtons.forEach((button) => {
-    button.classList.toggle("remote-style--active", button.dataset.style === style);
-  });
-  if (announce && style) {
-    setStyleStatus(`Selected: ${toTitleCase(style)}`);
-  }
-}
-
-async function loadStyles() {
-  if (!styleList) {
-    return;
-  }
-  setStyleStatus("Loading styles…");
-  try {
-    const response = await fetch("/api/styles");
-    if (!response.ok) {
-      throw new Error("Failed to load styles");
-    }
-    const data = await response.json();
-    const styles = data.styles ?? [];
-    styleList.innerHTML = "";
-    if (!styles.length) {
-      setStyleStatus("No styles available.");
-      return;
-    }
-    styles.forEach((style) => {
-      const button = document.createElement("button");
-      button.className = "remote-style";
-      button.textContent = toTitleCase(style);
-      button.dataset.style = style;
-      button.addEventListener("click", () => {
-        setSelectedStyle(style);
-        sendStyle(style);
-      });
-      styleList.appendChild(button);
-    });
-    setStyleStatus("Tap a style to select it.");
-    if (selectedStyle) {
-      setSelectedStyle(selectedStyle, { announce: false });
     }
   } catch (error) {
     setStyleStatus("Unable to load styles.");
